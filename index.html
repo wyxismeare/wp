@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>维希斯米尔 - Release资源网盘</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;font-family:system-ui,"Microsoft Yahei",sans-serif;}
+body{background-color:#f3f4f6;padding:24px;}
+.container{max-width:900px;margin:0 auto;}
+.header{background:#2563eb;color:#fff;padding:24px;border-radius:16px;margin-bottom:20px;}
+.header h1{font-size:28px;margin-bottom:8px;}
+.header p{opacity:0.9;}
+.disk-card{background:#fff;border-radius:16px;overflow:hidden;box-shadow:0 2px 12px #00000012;}
+.item-head{display:grid;grid-template-columns:2fr 100px 160px 140px;padding:14px 20px;background:#f9fafb;font-weight:bold;color:#444;}
+.file-item{display:grid;grid-template-columns:2fr 100px 160px 140px;padding:16px 20px;align-items:center;border-bottom:1px solid #eee;}
+.file-item:last-child{border-bottom:none;}
+.file-name{display:flex;gap:10px;align-items:center;}
+.btn{padding:8px 12px;border-radius:8px;border:none;cursor:pointer;font-size:14px;}
+.dl-btn{background:#2563eb;color:#fff;}
+.copy-btn{background:#10b981;color:#fff;}
+.back{margin-top:20px;text-align:center;}
+.back a{color:#2563eb;text-decoration:none;font-size:16px;}
+.toast{position:fixed;bottom:30px;left:50%;transform:translateX(-50%);background:#222;color:#fff;padding:12px 24px;border-radius:99px;display:none;}
+.loading{padding:30px;text-align:center;font-size:18px;color:#666;}
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="header">
+    <h1>☁️ 维希斯米尔资源网盘</h1>
+    <p>文件托管于 GitHub Release 附件，网页自动加载资源列表</p>
+  </div>
+  <div class="disk-card">
+    <div class="item-head">
+      <div>文件名</div>
+      <div>大小</div>
+      <div>操作</div>
+      <div>分享链接</div>
+    </div>
+    <div id="fileList" class="loading">正在读取Release附件列表...</div>
+  </div>
+  <div class="back">
+    <a href="/">← 返回网站主页</a>
+  </div>
+</div>
+<div class="toast" id="toast">✅ 链接已复制到剪贴板</div>
+
+<script>
+// =========修改这里！你的仓库信息和Release标签=========
+const REPO_OWNER = "wyxismeare";
+const REPO_NAME = "wyxismeare.github.io";
+const RELEASE_TAG = "v1.0.0"; // 你新建Release时设置的tag名称
+// ======================================================
+
+// 字节转可读大小
+function formatSize(bytes) {
+  if(!bytes) return "-";
+  if(bytes < 1024) return bytes + " B";
+  else if(bytes < 1048576) return (bytes / 1024).toFixed(1) + " KB";
+  else return (bytes / 1048576).toFixed(1) + " MB";
+}
+
+// 复制链接弹窗
+function copyLink(url){
+  navigator.clipboard.writeText(url).then(()=>{
+    const toast = document.getElementById('toast');
+    toast.style.display = "block";
+    setTimeout(()=>toast.style.display="none",1500);
+  })
+}
+
+async function loadReleaseAssets(){
+  try{
+    const apiUrl = `https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/releases/tags/${RELEASE_TAG}`;
+    const res = await fetch(apiUrl);
+    const data = await res.json();
+    const assets = data.assets;
+    if(!assets || assets.length === 0){
+      document.getElementById("fileList").innerText = "这个Release里面没有上传附件";
+      return;
+    }
+    let html = "";
+    assets.forEach(asset=>{
+      const downloadUrl = asset.browser_download_url;
+      html += `
+      <div class="file-item">
+        <div class="file-name">📦 ${asset.name}</div>
+        <div>${formatSize(asset.size)}</div>
+        <div><a href="${downloadUrl}" target="_blank"><button class="btn dl-btn">下载</button></a></div>
+        <div><button class="btn copy-btn" onclick="copyLink('${downloadUrl}')">复制链接</button></div>
+      </div>`;
+    })
+    document.getElementById("fileList").innerHTML = html;
+  }catch(err){
+    document.getElementById("fileList").innerText = "读取Release附件失败，API访问受限";
+    console.error(err);
+  }
+}
+loadReleaseAssets();
+</script>
+</body>
+</html>
